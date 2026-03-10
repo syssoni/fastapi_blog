@@ -20,7 +20,10 @@ class User(Base):
         default=None,
     )
 
-    posts:Mapped[list[Post]] = relationship(back_populates="author")
+    posts:Mapped[list[Post]] = relationship(
+        back_populates="author",
+        cascade="all, delete-orphan",
+    )
 
     @property
     def image_path(self) -> str:
@@ -40,6 +43,7 @@ class Post(Base):
         nullable=False,
         index = True,
     )
+
     date_posted: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
