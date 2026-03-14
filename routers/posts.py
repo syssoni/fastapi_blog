@@ -27,7 +27,7 @@ async def get_posts(db:Annotated[AsyncSession, Depends(get_db)]):
 )
 async def create_post(post: PostCreate, db: Annotated[AsyncSession, Depends(get_db)]):
     result = await db.execute(
-        select(models.User).where(models.User.id == post.user_id).where(models.User.id == post.user_id))
+        select(models.User).where(models.User.id == post.user_id))
     user = result.scalars().first()
     if not user:
         raise HTTPException(
@@ -48,7 +48,7 @@ async def create_post(post: PostCreate, db: Annotated[AsyncSession, Depends(get_
 @router.get("/{post_id}", response_model=PostResponse)
 async def get_post(post_id: int, db: Annotated[AsyncSession, Depends(get_db)]):
     result = await db.execute(
-        select(models.Post).where(models.Post.id == post_id).options(selectinload(models.Post.author)).where(models.Post.id == post_id))
+        select(models.Post).options(selectinload(models.Post.author)).where(models.Post.id == post_id))
     post = result.scalars().first()
     if post:
         return post
@@ -100,16 +100,16 @@ async def update_post_partial(
     if not post:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found"
+            detail="Post not found",
         )
+
     update_data = post_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(post, field, value)
-    
-    await db.commit()
-    await db.refresh(post)
-    return post
 
+    await db.commit()
+    await db.refresh(post, attribute_names=["author"])
+    return post
 
 @router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_post(post_id: int, db: Annotated[AsyncSession, Depends(get_db)]):
